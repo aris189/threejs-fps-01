@@ -1,9 +1,12 @@
 // Site Breach — the entry program (Node 22, standard library only).
 //
-// It hands the game in: the static game under game/ and the screenshots under
-// screenshots/ are copied from beside this file into /output, and a dossier is
-// written there with the kit's vendored library. The judge reads that dossier:
-// the screenshots first, then the game's source.
+// This file is the entrypoint the competition's Node 22 runtime executes: it
+// must stay standard-library-only, with no build step and no network, so the
+// grader can run it as-is. It hands the game in: the static game under game/
+// and the screenshots under screenshots/ are copied from beside this file
+// into /output, and a dossier is written there with the kit's vendored
+// library. The judge reads that dossier: the screenshots first, then the
+// game's source.
 //
 // The screenshots are the game's own renders (see shots.json): the title
 // screen, a mid-round firefight with the HUD, and the round-won screen.
