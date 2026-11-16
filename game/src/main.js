@@ -30,11 +30,32 @@ document.getElementById('game').appendChild(renderer.domElement);
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(PALETTE.sky);
 scene.fog = new THREE.Fog(PALETTE.fog, 26, 70);
+// Sky dome: a vertical day gradient generated at runtime (no external asset).
+{
+  const c = document.createElement('canvas');
+  c.width = 4;
+  c.height = 256;
+  const g = c.getContext('2d');
+  const grad = g.createLinearGradient(0, 0, 0, 256);
+  grad.addColorStop(0, '#5f9fd4');
+  grad.addColorStop(0.55, '#a8c8e0');
+  grad.addColorStop(0.78, '#e8dcc0');
+  grad.addColorStop(1, '#d8c8a8');
+  g.fillStyle = grad;
+  g.fillRect(0, 0, 4, 256);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  const sky = new THREE.Mesh(
+    new THREE.SphereGeometry(120, 24, 16),
+    new THREE.MeshBasicMaterial({ map: tex, side: THREE.BackSide, fog: false }),
+  );
+  scene.add(sky);
+}
 const camera = new THREE.PerspectiveCamera(74, window.innerWidth / window.innerHeight, 0.05, 160);
 scene.add(camera);
 
-scene.add(new THREE.HemisphereLight(0x8fa3c0, 0x2a2419, 1.05));
-const sun = new THREE.DirectionalLight(0xffe0b0, 1.6);
+scene.add(new THREE.HemisphereLight(0xcfe4f5, 0x9a8f7a, 1.9));
+const sun = new THREE.DirectionalLight(0xfff1d6, 2.4);
 sun.position.set(18, 30, 12);
 sun.castShadow = true;
 sun.shadow.mapSize.set(1024, 1024);
@@ -79,24 +100,61 @@ let buyOpen = false;
 let shake = 0;
 let flash = 0;
 
-// ---- Viewmodel: a simple rifle the player carries ----
+// ---- Viewmodel: a detailed rifle the player carries ----
 const viewGun = new THREE.Group();
 {
-  const dark = new THREE.MeshLambertMaterial({ color: 0x22262c });
-  const mid = new THREE.MeshLambertMaterial({ color: 0x3a414b });
+  const dark = new THREE.MeshLambertMaterial({ color: 0x2c3138 });
+  const mid = new THREE.MeshLambertMaterial({ color: 0x4a525e });
+  const steel = new THREE.MeshLambertMaterial({ color: 0x6b7683 });
+  const amber = new THREE.MeshBasicMaterial({ color: PALETTE.accent });
   const receiver = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.13, 0.5), mid);
   viewGun.add(receiver);
-  const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.34, 8), dark);
+  // Handguard with ridges.
+  const guard = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.11, 0.3), dark);
+  guard.position.set(0, 0.01, -0.38);
+  viewGun.add(guard);
+  for (let i = 0; i < 3; i++) {
+    const ridge = new THREE.Mesh(new THREE.BoxGeometry(0.104, 0.02, 0.03), steel);
+    ridge.position.set(0, 0.07, -0.28 - i * 0.1);
+    viewGun.add(ridge);
+  }
+  const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.22, 8), steel);
   barrel.rotation.x = Math.PI / 2;
-  barrel.position.set(0, 0.02, -0.38);
+  barrel.position.set(0, 0.02, -0.62);
   viewGun.add(barrel);
-  const sight = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.06, 0.08), dark);
-  sight.position.set(0, 0.1, -0.05);
-  viewGun.add(sight);
+  const brake = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.05, 0.09), dark);
+  brake.position.set(0, 0.02, -0.76);
+  viewGun.add(brake);
+  // Front sight post with a glowing amber fibre tip.
+  const post = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.07, 0.02), dark);
+  post.position.set(0, 0.09, -0.5);
+  viewGun.add(post);
+  const fibre = new THREE.Mesh(new THREE.BoxGeometry(0.014, 0.014, 0.05), amber);
+  fibre.position.set(0, 0.13, -0.5);
+  viewGun.add(fibre);
+  // Rear sight.
+  const rear = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.05, 0.06), dark);
+  rear.position.set(0, 0.09, 0.14);
+  viewGun.add(rear);
+  // Stock, grip, trigger guard, magazine.
+  const stock = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.11, 0.22), dark);
+  stock.position.set(0, -0.01, 0.34);
+  viewGun.add(stock);
+  const grip = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.12, 0.08), dark);
+  grip.position.set(0, -0.11, 0.12);
+  grip.rotation.x = 0.3;
+  viewGun.add(grip);
+  const trigger = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.04, 0.12), steel);
+  trigger.position.set(0, -0.09, 0.16);
+  viewGun.add(trigger);
   const mag = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.16, 0.1), dark);
   mag.position.set(0, -0.12, 0.05);
   mag.rotation.x = 0.15;
   viewGun.add(mag);
+  // Charging handle on the right side.
+  const handle = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.03, 0.06), steel);
+  handle.position.set(0.055, 0.03, 0.05);
+  viewGun.add(handle);
   viewGun.position.set(0.28, -0.26, -0.55);
   camera.add(viewGun);
 }

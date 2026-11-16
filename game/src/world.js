@@ -5,7 +5,7 @@
 // every edge was checked to run through open ground.
 import * as THREE from 'three';
 import { PALETTE } from './palette.js';
-import { segmentHitsRect } from './util.js';
+import { segmentHitsRect, mulberry32 } from './util.js';
 
 // Each collider is an axis-aligned box: centre (x, z), half extents (hw, hd),
 // height h. Walls taller than 1.5 m also block line of sight.
@@ -168,7 +168,46 @@ export function createWorld(scene) {
   const shootables = [];
   const lambert = (color) => new THREE.MeshLambertMaterial({ color });
 
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(66, 46), lambert(PALETTE.ground));
+  // Ground: a concrete tile texture generated at runtime (no external asset).
+  // 512 px canvas = 4x4 tiles; repeated so each tile is ~2 m on the floor.
+  const groundTex = (() => {
+    const c = document.createElement('canvas');
+    c.width = 512;
+    c.height = 512;
+    const g = c.getContext('2d');
+    g.fillStyle = '#8a8d84';
+    g.fillRect(0, 0, 512, 512);
+    const shades = ['#8f9289', '#85887f', '#93968d', '#82857c'];
+    for (let ty = 0; ty < 4; ty++) {
+      for (let tx = 0; tx < 4; tx++) {
+        g.fillStyle = shades[(tx + ty * 3) % 4];
+        g.fillRect(tx * 128 + 2, ty * 128 + 2, 124, 124);
+      }
+    }
+    // Speckles for a worn-concrete read (seeded, so every load looks the same).
+    const rnd = mulberry32(7);
+    for (let i = 0; i < 900; i++) {
+      g.fillStyle = rnd() < 0.5 ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.05)';
+      g.fillRect(rnd() * 512, rnd() * 512, 2, 2);
+    }
+    // Tile seams.
+    g.strokeStyle = 'rgba(40,44,48,0.55)';
+    g.lineWidth = 3;
+    for (let i = 0; i <= 4; i++) {
+      g.beginPath(); g.moveTo(i * 128, 0); g.lineTo(i * 128, 512); g.stroke();
+      g.beginPath(); g.moveTo(0, i * 128); g.lineTo(512, i * 128); g.stroke();
+    }
+    const tex = new THREE.CanvasTexture(c);
+    tex.wrapS = THREE.RepeatWrapping;
+    tex.wrapT = THREE.RepeatWrapping;
+    tex.repeat.set(8, 6);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    return tex;
+  })();
+  const ground = new THREE.Mesh(
+    new THREE.PlaneGeometry(66, 46),
+    new THREE.MeshLambertMaterial({ map: groundTex }),
+  );
   ground.rotation.x = -Math.PI / 2;
   ground.receiveShadow = true;
   scene.add(ground);
@@ -186,13 +225,18 @@ export function createWorld(scene) {
   const wallMat = lambert(PALETTE.wall);
   const wallDarkMat = lambert(PALETTE.wallDark);
   const wallTopMat = lambert(PALETTE.wallTop);
+  // Per-area tones: the north (site) half reads cool steel blue, the south
+  // (spawn) half warm sand — the map reads at a glance without moving a collider.
+  const wallNorthMat = lambert(0x7d8aa0);
+  const wallSouthMat = lambert(0x9a938a);
   const crateMat = lambert(PALETTE.crate);
   const crateDarkMat = lambert(PALETTE.crateDark);
   for (const c of COLLIDERS) {
     const isLow = c.h <= 1.2 && c.hw + c.hd <= 4 && !(c.hw >= 4 || c.hd >= 4);
     const isCrate = c.h === 1.2 && c.hw <= 1.2 && c.hd <= 1.2;
     const geo = new THREE.BoxGeometry(c.hw * 2, c.h, c.hd * 2);
-    const mesh = new THREE.Mesh(geo, isCrate ? crateMat : isLow ? crateDarkMat : wallMat);
+    const mat = isCrate ? crateMat : isLow ? crateDarkMat : (c.z < -4 ? wallNorthMat : wallSouthMat);
+    const mesh = new THREE.Mesh(geo, mat);
     mesh.position.set(c.x, c.h / 2, c.z);
     mesh.castShadow = c.h > 1.5;
     mesh.receiveShadow = true;
@@ -202,6 +246,11 @@ export function createWorld(scene) {
       const cap = new THREE.Mesh(new THREE.BoxGeometry(c.hw * 2 + 0.12, 0.12, c.hd * 2 + 0.12), wallTopMat);
       cap.position.set(c.x, c.h + 0.06, c.z);
       scene.add(cap);
+    } else if (isCrate) {
+      // Crates get a darker lid so they read as containers, not grey blocks.
+      const lid = new THREE.Mesh(new THREE.BoxGeometry(c.hw * 2 + 0.08, 0.08, c.hd * 2 + 0.08), crateDarkMat);
+      lid.position.set(c.x, c.h + 0.04, c.z);
+      scene.add(lid);
     }
   }
 

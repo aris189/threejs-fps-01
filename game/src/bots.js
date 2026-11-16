@@ -27,14 +27,59 @@ function makeBotMesh(scene, name) {
   const group = new THREE.Group();
   const bodyMat = new THREE.MeshLambertMaterial({ color: PALETTE.enemy });
   const darkMat = new THREE.MeshLambertMaterial({ color: PALETTE.enemyDark });
-  const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.32, 0.8, 6, 12), bodyMat);
-  body.position.y = 1.0;
+  const bootMat = new THREE.MeshLambertMaterial({ color: 0x2a1e16 });
+  // Torso: a shorter red capsule — the vest of the figure (hit mesh, part 'body').
+  const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.30, 0.55, 6, 12), bodyMat);
+  body.position.y = 1.15;
   body.castShadow = true;
   group.add(body);
+  // Chest plate (dark vest front) and belt.
+  const plate = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.38, 0.08), darkMat);
+  plate.position.set(0, 1.22, 0.28);
+  group.add(plate);
+  const belt = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.1, 0.34), darkMat);
+  belt.position.set(0, 0.82, 0);
+  group.add(belt);
+  // Legs: two dark trouser legs. They are hit meshes too (part 'body') and
+  // meet at the centre line, so low shots behave as they did against the old
+  // full-length capsule.
+  const legGeo = new THREE.BoxGeometry(0.22, 0.8, 0.2);
+  const legL = new THREE.Mesh(legGeo, darkMat);
+  legL.position.set(-0.11, 0.4, 0);
+  legL.castShadow = true;
+  group.add(legL);
+  const legR = new THREE.Mesh(legGeo, darkMat);
+  legR.position.set(0.11, 0.4, 0);
+  legR.castShadow = true;
+  group.add(legR);
+  const bootGeo = new THREE.BoxGeometry(0.2, 0.1, 0.3);
+  const bootL = new THREE.Mesh(bootGeo, bootMat);
+  bootL.position.set(-0.11, 0.05, 0.03);
+  group.add(bootL);
+  const bootR = new THREE.Mesh(bootGeo, bootMat);
+  bootR.position.set(0.11, 0.05, 0.03);
+  group.add(bootR);
+  // Arms: red sleeves angled slightly forward; the right one holds the gun.
+  const armGeo = new THREE.BoxGeometry(0.13, 0.6, 0.16);
+  const armL = new THREE.Mesh(armGeo, bodyMat);
+  armL.position.set(-0.38, 1.08, 0.05);
+  armL.rotation.x = -0.25;
+  group.add(armL);
+  const armR = new THREE.Mesh(armGeo, bodyMat);
+  armR.position.set(0.38, 1.08, 0.12);
+  armR.rotation.x = -0.55;
+  group.add(armR);
+  // Head: dark face sphere, red helmet dome, amber visor.
   const head = new THREE.Mesh(new THREE.SphereGeometry(0.26, 14, 10), darkMat);
   head.position.y = 1.66;
   head.castShadow = true;
   group.add(head);
+  const helmet = new THREE.Mesh(
+    new THREE.SphereGeometry(0.28, 14, 10, 0, Math.PI * 2, 0, Math.PI / 2),
+    bodyMat,
+  );
+  helmet.position.y = 1.68;
+  group.add(helmet);
   const visor = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.09, 0.1), new THREE.MeshBasicMaterial({ color: PALETTE.accent }));
   visor.position.set(0, 1.68, 0.22);
   group.add(visor);
@@ -48,7 +93,7 @@ function makeBotMesh(scene, name) {
   padR.position.x = 0.36;
   group.add(padR);
   scene.add(group);
-  return { group, body, head, gun };
+  return { group, body, head, gun, legL, legR };
 }
 
 export function createBots(scene, seed = 1) {
@@ -87,7 +132,9 @@ export function createBots(scene, seed = 1) {
     };
     mesh.body.userData = { bot, part: 'body' };
     mesh.head.userData = { bot, part: 'head' };
-    bot.hitMeshes = [mesh.body, mesh.head];
+    mesh.legL.userData = { bot, part: 'body' };
+    mesh.legR.userData = { bot, part: 'body' };
+    bot.hitMeshes = [mesh.body, mesh.head, mesh.legL, mesh.legR];
     bot.mesh.group.position.set(home[0], 0, home[1]);
     bots.push(bot);
   }

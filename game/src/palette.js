@@ -1,21 +1,21 @@
-// Palette: one chosen look for the whole game — dusk depot, sodium lamps, cold steel.
+// Palette: one chosen look for the whole game — bright day depot, sodium lamps, cold steel.
 // Every colour in the game comes from here, so the scene reads at a glance.
 export const PALETTE = {
-  sky: 0x1a2230,
-  fog: 0x1a2230,
-  ground: 0x2a2f36,
-  groundLine: 0x232830,
-  wall: 0x4a525e,
-  wallDark: 0x353c46,
-  wallTop: 0x5d6673,
-  crate: 0x6b5a34,
-  crateDark: 0x54452a,
+  sky: 0x9ec4e2,
+  fog: 0xb9cfe0,
+  ground: 0x8a8d84,
+  groundLine: 0x5a6068,
+  wall: 0x8b96a3,
+  wallDark: 0x6b7683,
+  wallTop: 0xb4bec8,
+  crate: 0x9a7d44,
+  crateDark: 0x7a6435,
   accent: 0xf0a830, // sodium amber — lamps, site markers, HUD accent
   accentDim: 0x8a6420,
   siteA: 0x35c4e8, // cyan hologram for Site A
   siteB: 0xe85d35, // orange hologram for Site B
-  enemy: 0xd23c2e, // defender red
-  enemyDark: 0x7e1f16,
+  enemy: 0xe0402f, // defender red
+  enemyDark: 0x8f2418,
   friendly: 0x35c4e8,
   tracer: 0xffd27a,
   muzzle: 0xffe9b0,
